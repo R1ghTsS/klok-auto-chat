@@ -16,13 +16,16 @@ A Node.js bot that automatically interacts with Klok AI platform using Ethereum 
 # Installation 🚀
 1. Clone the repository
    ```
-     git clone https://github.com/yourusername/klok-ai-bot.git
-     cd klok-ai-bot
-2. Install dependencies
+   git clone https://github.com/yourusername/klok-ai-bot.git
+   cd klok-ai-bot
+2. Add private key
    ```
-     npm install axios uuid ethers
-3. Run Bot
+   nano private-key.txt
+3. Install dependencies
    ```
-     node klok.js
+   npm install axios uuid ethers
+4. Run Bot
+   ```
+    node klok.js
 # Contributing 🤝
 Feel free to fork, create a feature branch, and submit a Pull Request.
