@@ -9,7 +9,8 @@ const CONFIG = {
   PRIVATE_KEY_FILE: 'private-key.txt',
   CHAT_INTERVAL: 60000,
   MAX_RETRIES: 5,
-  RETRY_DELAY: 10000, // 10 seconds
+  RETRY_DELAY: 10000,
+  RATE_LIMIT_DELAY: 86400000, // 24 hours in milliseconds
   RANDOM_MESSAGES: [
     "Hey there!",
     "What's new?",
@@ -112,7 +113,14 @@ async function sendDirectMessage(apiClient, message) {
     console.log('Message sent successfully');
     return response.data;
   } catch (error) {
-    console.error('Error sending message:', error.response?.status, error.response?.data || error.message);
+    const status = error.response?.status;
+    const data = error.response?.data;
+    
+    if (status === 429 || data?.detail?.includes('rate_limit_exceeded')) {
+      throw new Error('RATE_LIMIT_EXCEEDED');
+    }
+    
+    console.error('Error sending message:', status, data || error.message);
     return null;
   }
 }
@@ -122,12 +130,32 @@ async function checkPoints(apiClient) {
     const response = await apiClient.get('/points');
     return response.data;
   } catch (error) {
-    console.error('Error checking points:', error.response?.status, error.response?.data || error.message);
+    const status = error.response?.status;
+    if (status === 401) {
+      throw new Error('EXPIRED_TOKEN');
+    }
+    console.error('Error checking points:', status, error.response?.data || error.message);
     return null;
   }
 }
 
+async function handleCriticalError(error) {
+  console.error(`Critical error: ${error.message}`);
+  
+  if (error.message === 'RATE_LIMIT_EXCEEDED') {
+    console.log(`Daily limit exceeded. Restarting in 24 hours...`);
+    await new Promise(resolve => setTimeout(resolve, CONFIG.RATE_LIMIT_DELAY));
+  } else if (error.message === 'EXPIRED_TOKEN') {
+    console.log('Token expired. Renewing authentication...');
+    await new Promise(resolve => setTimeout(resolve, CONFIG.RETRY_DELAY));
+  }
+  
+  return runBot();
+}
+
 async function runBot(retryCount = 0) {
+  let intervalId;
+  
   try {
     let sessionToken = getToken();
     let apiClient;
@@ -140,7 +168,7 @@ async function runBot(retryCount = 0) {
     apiClient = createApiClient(sessionToken);
     console.log('Bot started successfully');
 
-    const interval = setInterval(async () => {
+    intervalId = setInterval(async () => {
       try {
         const points = await checkPoints(apiClient);
         if (!points || points.total_points <= 0) {
@@ -157,19 +185,13 @@ async function runBot(retryCount = 0) {
         console.log(`Remaining Points: ${updatedPoints.total_points}`);
 
       } catch (error) {
-        if (error.response?.status === 401) {
-          console.log('Session expired. Renewing authentication...');
-          clearInterval(interval);
-          await new Promise(resolve => setTimeout(resolve, CONFIG.RETRY_DELAY));
-          runBot(); // Restart the bot
-        } else {
-          console.error('Operation error:', error.message);
-        }
+        clearInterval(intervalId);
+        await handleCriticalError(error);
       }
     }, CONFIG.CHAT_INTERVAL);
 
   } catch (error) {
-    console.error(`Critical error (retry ${retryCount + 1}/${CONFIG.MAX_RETRIES}):`, error.message);
+    console.error(`Startup error (retry ${retryCount + 1}/${CONFIG.MAX_RETRIES}):`, error.message);
     
     if (retryCount < CONFIG.MAX_RETRIES) {
       await new Promise(resolve => setTimeout(resolve, CONFIG.RETRY_DELAY));
