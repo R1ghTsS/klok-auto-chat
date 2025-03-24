@@ -24,6 +24,9 @@ A Node.js bot that automatically interacts with Klok AI platform using Ethereum 
 3. Install dependencies
    ```
    npm install axios uuid ethers
+5. Use Screen
+   ```
+   screen -S klok
 4. Run Bot
    ```
     node klok.js
