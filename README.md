@@ -29,6 +29,6 @@ A Node.js bot that automatically interacts with Klok AI platform using Ethereum 
    screen -S klok
 4. Run Bot
    ```
-    node klok.js
+   node klok.js
 # Contributing 🤝
 Feel free to fork, create a feature branch, and submit a Pull Request.
