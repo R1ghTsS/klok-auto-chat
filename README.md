@@ -16,7 +16,7 @@ A Node.js bot that automatically interacts with Klok AI platform using Ethereum 
 # Installation 🚀
 1. Clone the repository
    ```
-   git clone https://github.com/yourusername/klok-ai-bot.git
+   git clone https://github.com/R1ghTsS/klok-auto-chat.git
    cd klok-ai-bot
 2. Add private key
    ```
